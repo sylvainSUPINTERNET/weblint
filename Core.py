@@ -1,10 +1,12 @@
 import ssl
+import time
 
 from urllib.request import urlopen
 from bs4 import BeautifulSoup
 
 
 class CoreTest :
+
 
     url_page = ""
 
@@ -53,6 +55,7 @@ class CoreTest :
 
     #Results tests
     def renderTests(self):
+        t0 = time.time()
         # TODO -> check if SSL OR NOT car ca va faire 2 block de tests differents
 
         # Scripts tags found
@@ -65,4 +68,7 @@ class CoreTest :
         print("\n")
         print(" URL target : " + self.url_page)
         print(" Scripts tag : " + str(scriptTags))
-        
+        print("\n")
+        print("\n")
+        t1 = time.time()
+        return "Execution time for each tests : " + str(t1-t0)
