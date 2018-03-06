@@ -1,9 +1,13 @@
 import ssl
 import time
+import urllib
 
 from urllib.parse import urlparse
 from urllib.request import urlopen
 from bs4 import BeautifulSoup
+from django.core.validators import URLValidator
+
+
 
 
 class CoreTest :
@@ -14,6 +18,8 @@ class CoreTest :
 
     page_source_code = ""
     soup = ""
+
+
 
     def __init__(self, url_page):
         self.url_page = url_page
@@ -30,6 +36,7 @@ class CoreTest :
 
         self.page_source_code = self.sourceCode()
         self.soup = self.soupify()
+
 
 
 
@@ -86,18 +93,102 @@ class CoreTest :
         return soup
 
 
+    # DOM
+
+    #script tag
+    def getScriptTags(self):
+        # Scripts tags found
+        scriptTags = 0
+        for scriptTag in self.soup.find_all('script'):
+            scriptTags += 1
+        return str(scriptTags)
+
+    def getScriptSrc(self):
+        srcValue = []
+        for scriptTag in self.soup.find_all('script'):
+
+            if(scriptTag.has_attr('src')):
+                srcValue.append(scriptTag['src'])
+            else:
+                srcValue.append('N/A')
+
+        return srcValue
+    def getScriptLoadTime(self):
+        srcValue = self.getScriptSrc()
+        loadTime = {}
+        for value in srcValue:
+            if(value != 'N\A'):
+
+                #rajouter un if IF value is not valid URL, update value to NA
+                req = urlopen(value)
+                #
+
+                start = time.time()
+                req.read()
+                end = time.time()
+                req.close()
+                loadTime.update({value: (end - start)})
+            else:
+                loadTime.update({value: 'N\A'})
+        return loadTime
+
+
+    """ TODO get header et les return
+    def getScriptHeadInfos(self):
+        srcValue = self.getScriptSrc()
+        headerInfos = {}
+        for value in srcValue:
+            req = urlopen(value)
+            header = req.headers
+            print(header)
+            response = req.read()
+            http_code_response = response.getcode()  # TODO after to check if some script return 404 etc
+            headerInfos.update({"header": header})
+        return headerInfos
+    """
+
+    def getScriptHttpCode(self):
+        srcValue = self.getScriptSrc()
+        http_codes = {}
+        for value in srcValue:
+
+            # rajouter un if IF value is not valid URL, update value to NA
+            req = urlopen(value)
+            #
+
+            response = req.read()
+            if(http_codes[value] != 'N\A'):
+                http_code = req.getcode()
+                http_codes[value] = http_code #equivalent of list.update(...)
+            else:
+                http_codes[value] = 'N\A'
+
+        return http_codes
+    def countErrorHttpCode(self):
+        list_http_codes = self.getScriptHttpCode()
+        http_error_count = 0
+        for code in list_http_codes:
+            if(list_http_codes[code] != None and list_http_codes[code] < 200 or list_http_codes[code] > 200 and  list_http_codes[code] != 'N\A'):
+                http_error_count += 1
+        return http_error_count
+
+
+
+
+
+
+
+
+
     #Results tests
     def renderTests(self):
         t0 = time.time()
         # TODO -> check if SSL OR NOT car ca va faire 2 block de tests differents
 
-        # Scripts tags found
-        scriptTags = 0
-        for scriptTag in self.soup.find_all('script'):
-            scriptTags += 1
 
         print(" _____________________________ RESULTS TESTS _____________________________ ")
         print("\n")
+        print("- - - - - - GENERAL - - - - - -")
         print("\n")
         print(" URL : " + self.url_page)
         print(" Protocol : " + self.protocol)
@@ -108,7 +199,18 @@ class CoreTest :
         print(" Fragment : " + self.fragment)
         print("")
         print("\n")
-        print(" Scripts tag : " + str(scriptTags))
+        print("- - - - - - DOM - - - - - -")
+        print("\n")
+        print(" Scripts tag : " + self.getScriptTags())
+        print(" Scripts src : " + str(self.getScriptSrc()))
+        print(" GET loading time : " + str(self.getScriptLoadTime()))
+        print(" Script HTTP code response (from scripts loading) : " + str(self.getScriptHttpCode()))
+        print(" Script HTTP code response ERROR : " + str(self.countErrorHttpCode()))
+
+        #test perso to remove later
+        # TODO: faire analyse du header sur les scripts
+
+
         print("\n")
         print("\n")
         t1 = time.time()
