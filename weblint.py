@@ -1,6 +1,7 @@
 
 import sys
 import requests
+import urllib
 
 from django.core.validators import URLValidator
 from Core import CoreTest
@@ -18,8 +19,7 @@ else:
         if (isValid):
             print(" URL is valid")
             req = requests.get(url)
-            stauts_code = req.status_code
-            if (stauts_code == 200):
+            if (req.status_code == 200):
                 coreTest = CoreTest(str(sys.argv[1]))
 
                 print(coreTest.getUrlPage())
@@ -32,7 +32,7 @@ else:
                 print(coreTest.getUrlParsed()) #For test
 
             else:
-                print("Error : " + str(stauts_code))
+                print("Error occured => " + str(req.status_code))
         else:
             print(" URL given not valid !")
     except:
