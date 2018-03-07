@@ -1,3 +1,4 @@
+import cgi
 import ssl
 import time
 import urllib
@@ -10,6 +11,8 @@ from pprint import pformat
 from urllib.parse import urlparse
 from urllib.request import urlopen
 from bs4 import BeautifulSoup
+from bs4 import UnicodeDammit
+
 from django.core.validators import URLValidator
 
 
@@ -93,7 +96,7 @@ class CoreTest:
     # DOM
 
     # script tag
-    """
+
     def getScriptTags(self):
         # Scripts tags found
         scriptTags = 0
@@ -130,6 +133,7 @@ class CoreTest:
         return loadTime
 
    #dosnt work
+    """
     def getScriptHeadInfos(self):
         srcValue = self.getScriptSrc()
         headerInfos = {}
@@ -141,7 +145,7 @@ class CoreTest:
             http_code_response = response.getcode()  # TODO after to check if some script return 404 etc
             headerInfos.update({"header": header})
         return headerInfos
-
+    """
 
     def getScriptHttpCode(self):
 
@@ -190,7 +194,7 @@ class CoreTest:
 
 
         return http_details
-    """
+
 
     # PAGE
     # - informations
@@ -220,7 +224,7 @@ class CoreTest:
         x_DNS_prefetch_control = header['X-DNS-Prefetch-Control']
 
         if(CSP == None):
-            errorHeader.update({"CSP": "No Content-Security-Policy" })
+            errorHeader.update({"No Content-Security-Policy": "No Content-Security-Policy" })
         if(x_frame_options == None):
             errorHeader.update({"X-Frame-Options" : "No X-Frame-Options"})
         if(x_request_guid == None):
@@ -242,39 +246,35 @@ class CoreTest:
 
     def headerDate(self):
         header = self.pageHeader()
-
         last_update = header['Last-Modified']
-
-        return last_update
-
-
-
-
-
-
-
-    """
-    def encodingCheck(self):
-        header = self.pageHeader()
-        contentType = header['Content-Type']
-
-
-        encodingMeta = 0
-        balisesMeta = self.soup.find_all('meta')
-        for balise in balisesMeta:
-            print(balise)
-
-        print(contentType)
-    """
-
+        if(last_update != None):
+            return last_update
+        else:
+            return " Information not available via header"
 
     # Results tests
     def renderTests(self):
         t0 = time.time()
-        # TODO -> check if SSL OR NOT car ca va faire 2 block de tests differents
+
+        #HEADER checking
+        header = self.pageHeader()
+        headerErrors = self.headerDetails()
+        headerDate = self.headerDate()
+
+
+        #DOM checking
+        # - script
+        tagScript = self.getScriptTags()
+        scriptLoadingTime = str(self.getScriptLoadTime())
+        scriptHttpCode = str(self.getScriptHttpCode())
+        errorResultHttpCode = str(self.countErrorHttpCode())
+
+
 
         print(" _____________________________ RESULTS TESTS _____________________________ ")
         print("\n")
+
+
         print("- - - - - - GENERAL - - - - - -")
         print("\n")
         print(" URL : " + self.url_page)
@@ -286,31 +286,30 @@ class CoreTest:
         print(" Fragment : " + self.fragment)
         print(" Loading time : " + str(self.pageLoadingTime()))
         print("\n")
+
+
         print("- - - - - - HEADER - - - - - -")
         print("\n")
-        print(self.pageHeader())
+        print(header)
         print("\n")
-        print("Last update : " + str(self.headerDate()) )
+        print("Last update : " + headerDate)
+        for detail in headerErrors:
+            print("[x] => " + headerErrors[detail])
         print("\n")
-        pprint(self.headerDetails())
-        print("\n")
-        #print(self.encodingCheck())
-
-
 
         print("- - - - - - DOM - - - - - -")
-        """
+
         print("\n")
-        print(" Scripts tag : " + self.getScriptTags())
+        print(" Scripts tag : " + tagScript)
         print("\n")
-        pprint(" Scripts src : " + str(self.getScriptSrc()))
+        #pprint(" Scripts src : " + str(self.getScriptSrc()))
         print("\n")
-        pprint(" GET loading time : " + str(self.getScriptLoadTime()))
+        pprint(" GET loading time : " + scriptLoadingTime )
         print("\n")
-        pprint(" Script HTTP code response (from scripts loading) : " + str(self.getScriptHttpCode()))
+        pprint(" Script HTTP code response (from scripts loading) : " + scriptHttpCode)
         print("\n")
-        pprint(" Script HTTP code response ERROR (from script loading) : " + str(self.countErrorHttpCode()))
-        """
+        pprint(" Script HTTP code response ERROR (from script loading) : " + errorResultHttpCode)
+
 
 
         # test perso to remove later

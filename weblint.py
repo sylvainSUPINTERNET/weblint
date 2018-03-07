@@ -24,8 +24,10 @@ else:
 
                 print(coreTest.getUrlPage())
 
-                print(coreTest.getPageSourceCode())
-                print(coreTest.getSoupPretty())
+                # display code source HTML
+                #print(coreTest.getPageSourceCode())
+                # display code source HTML prettify
+                #print(coreTest.getSoupPretty())
 
                 print(coreTest.renderTests())
 
