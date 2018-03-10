@@ -3,6 +3,8 @@ import ssl
 import time
 import urllib
 import requests
+import re
+import os
 
 
 from pprint import pprint
@@ -34,6 +36,8 @@ class CoreTest:
         self.query = self.url_parsed.query
         self.params = self.url_parsed.params
         self.fragment = self.url_parsed.fragment
+
+        self.homePath = self.getHomePath()
 
         self.page_source_code = self.sourceCode()
         self.soup = self.soupify()
@@ -79,6 +83,9 @@ class CoreTest:
         page_source_code = content.read()
         return page_source_code
 
+    def getHomePath(self):
+        return self.url_parsed.scheme + "://" + self.domain + "/"
+
     # Soupify
     def setSoup(self, soup):
         self.soup = soup
@@ -95,8 +102,7 @@ class CoreTest:
 
     # DOM
 
-    # script tag
-
+    # JS
     def getScriptTags(self):
         # Scripts tags found
         scriptTags = 0
@@ -131,21 +137,6 @@ class CoreTest:
                 else:
                     loadTime.update({value: 'NoResult'})
         return loadTime
-
-   #dosnt work
-    """
-    def getScriptHeadInfos(self):
-        srcValue = self.getScriptSrc()
-        headerInfos = {}
-        for value in srcValue:
-            req = urlopen(value)
-            header = req.headers
-            print(header)
-            response = req.read()
-            http_code_response = response.getcode()  # TODO after to check if some script return 404 etc
-            headerInfos.update({"header": header})
-        return headerInfos
-    """
 
     def getScriptHttpCode(self):
 
@@ -194,6 +185,102 @@ class CoreTest:
 
 
         return http_details
+
+
+    # CSS
+    def getLinkTag(self):
+        linkTagsCount = 0
+        styleLinks = self.soup.find_all('link')
+        for link in styleLinks:
+            if(link['rel'] != None):
+                if(link['rel'][0] == "stylesheet"):
+                    linkTagsCount += 1
+        return linkTagsCount
+
+
+    def getLinkHref(self):
+        hrefValue = []
+        styleLinks = self.soup.find_all('link')
+        for link in styleLinks:
+            if (link['rel'] != None):
+                if (link['rel'][0] == "stylesheet"):
+                    if(link['href'] != None):
+                        linkParsed = urlparse(link['href'])
+                        if(linkParsed.scheme == "http" or linkParsed.scheme == "https" ):
+                            hrefValue.append(link['href'])
+
+        if(hrefValue.__len__() == 0):
+            return " Aucun href http ou https detected"
+        else:
+            return hrefValue
+
+    def getLinkLoadTime(self):
+        hrefValue = self.getLinkHref()
+        if(type(hrefValue) != str): #if STR means 0 link found
+            loadTime = {}
+            for value in hrefValue:
+                hrefParsed = urlparse(value)
+                if (hrefParsed.scheme == "http" or hrefParsed.scheme == "https"):
+                    req = urlopen(value)
+                    start = time.time()
+                    req.read()
+                    end = time.time()
+                    req.close()
+                    loadTime.update({value: (end - start)})
+            return loadTime
+        else:
+            return " 0 links found for test loading"
+
+    def getHrefHttpCode(self):
+        hrefValue = self.getLinkHref() # return 1 str if its one error
+
+        if(type(hrefValue) != str):
+            http_codes = {}
+            for idx, value in enumerate(hrefValue):
+                req = urlopen(value)
+                response = req.read()
+                http_code = req.getcode()
+                http_codes.update({value: http_code})
+
+            return http_codes
+        else:
+            return " No link to check HTTP code"
+
+    def getHrefHttpCodeDetail(self):
+        list_http_codes = self.getHrefHttpCode()
+        if(type(list_http_codes) != str) :
+            informations = 0
+            success = 0
+            redirection = 0
+            error_client = 0
+            error_server = 0
+
+            http_details = {}
+
+            for code in list_http_codes:
+                if (list_http_codes[code] != None and list_http_codes[code] >= 100 and list_http_codes[code] <= 103):
+                    informations += 1
+                    http_details.update({'informations': informations})
+                if (list_http_codes[code] != None and list_http_codes[code] >= 200 and list_http_codes[code] <= 226):
+                    success += 1
+                    http_details.update({'success': success})
+                if (list_http_codes[code] != None and list_http_codes[code] >= 300 and list_http_codes[code] <= 310):
+                    redirection += 1
+                    http_details.update({'redirection': redirection})
+                if (list_http_codes[code] != None and list_http_codes[code] >= 400 and list_http_codes[code] <= 499):
+                    error_client += 1
+                    http_details.update({'error_client': error_client})
+                if (list_http_codes[code] != None and list_http_codes[code] >= 500 and list_http_codes[code] <= 527):
+                    error_server += 1
+                    http_details.update({'error_server': error_server})
+
+            return http_details
+        else:
+            return " NO link found No HTTP code found for test"
+
+
+
+
 
 
     # PAGE
@@ -252,6 +339,66 @@ class CoreTest:
         else:
             return " Information not available via header"
 
+
+
+
+
+    # Encoding
+
+    def getPageEncoding(self):
+        encod = self.soup.meta.get('charset')
+        if encod == None:
+            encod = self.soup.meta.get('content-type')
+            if encod == None:
+                content = self.soup.meta.get('content')
+                match = re.search('charset=(.*)', content)
+                if match:
+                    encod = match.group(1)
+                    return encod
+                else:
+                    return ' Error cannot find encoding of page'
+        else:
+            return ' Error cannot find encoding of page'
+
+    def compareEncoding(self): #compare encoding header / page
+        pageEncoding = self.getPageEncoding()
+        if(pageEncoding != 'Error cannot find encoding of page' ):
+            #check if we find charset in header
+            _, params = cgi.parse_header('text/html; charset=utf-8')
+            if(params['charset']):
+                if(params['charset'] == pageEncoding):
+                    return " Encoding same on page and header"
+                else:
+                    return " Encoding not same between page and header => Page : " + pageEncoding + " / Header : " + params['charset']
+            else:
+                return " Cannot find encoding into header details"
+        else:
+            return " Cannot find page encoding"
+
+        #Robots / Security
+
+    def robotsTxtExist(self):
+        url = self.homePath
+        urlRobotsTxt = url + "robots.txt"
+        req = requests.get(urlRobotsTxt)
+        if(req.status_code == 200):
+            return " Robots.txt found"
+        else:
+            return " No robots.txt found"
+
+
+        # TODO Analyser le robots.txt
+        #exemple ces deux liens le robots na pas les même agents etc donc a regarder
+        # https://stackoverflow.com/robots.txt (Cest bien, plein d'agent un sitemap etc)
+        # http://www.univ-paris3.fr/robots.txt (pas de sitemap, qun seul agent etc)
+
+
+
+
+
+
+
+
     # Results tests
     def renderTests(self):
         t0 = time.time()
@@ -263,12 +410,23 @@ class CoreTest:
 
 
         #DOM checking
-        # - script
+        # - script JS
         tagScript = self.getScriptTags()
-        scriptLoadingTime = str(self.getScriptLoadTime())
+        scriptLoadingTime = str(self.getScriptLoadTime()) #only http or https parsed
         scriptHttpCode = str(self.getScriptHttpCode())
         errorResultHttpCode = str(self.countErrorHttpCode())
 
+        # - CSS
+        countStyleTag = str(self.getLinkTag())
+        linkHref = self.getLinkHref() #only http or https parsed
+        linkLoadingTime = str(self.getLinkLoadTime())
+        linkHrefHttpCode = str(self.getHrefHttpCode())
+        linkHrefHttpCodeDetail = str(self.getHrefHttpCodeDetail())
+
+        # - Page
+        pageEncoding = str(self.getPageEncoding())
+        compareEncoding = str(self.compareEncoding()) #compare header encoding with page encoding
+        robotsTxtExist = str(self.robotsTxtExist())
 
 
         print(" _____________________________ RESULTS TESTS _____________________________ ")
@@ -285,12 +443,12 @@ class CoreTest:
         print(" Params : " + self.params)
         print(" Fragment : " + self.fragment)
         print(" Loading time : " + str(self.pageLoadingTime()))
+        print(" Path home : " + str(self.homePath))
         print("\n")
 
 
         print("- - - - - - HEADER - - - - - -")
-        print("\n")
-        print(header)
+        #print(header)
         print("\n")
         print("Last update : " + headerDate)
         for detail in headerErrors:
@@ -298,24 +456,42 @@ class CoreTest:
         print("\n")
 
         print("- - - - - - DOM - - - - - -")
-
+        # JS script
+        print("\n JS")
         print("\n")
         print(" Scripts tag : " + tagScript)
-        print("\n")
         #pprint(" Scripts src : " + str(self.getScriptSrc()))
         print("\n")
         pprint(" GET loading time : " + scriptLoadingTime )
         print("\n")
         pprint(" Script HTTP code response (from scripts loading) : " + scriptHttpCode)
         print("\n")
-        pprint(" Script HTTP code response ERROR (from script loading) : " + errorResultHttpCode)
+        print(" Script HTTP code response ERROR (from script loading HTTPS ) / ONLY http or https parsed : " + errorResultHttpCode)
+        print("\n")
 
+        #CSS link
+        print("\n CSS")
+        print("\n")
+        print(" Link stylesheet tag : " + countStyleTag)
+        print(linkHref)
+        pprint(" Loading time : " + linkLoadingTime)
+        pprint(" HTTP code : " + linkHrefHttpCode)
+        print(" HTTP code detail : " + linkHrefHttpCodeDetail)
+        print("\n")
 
+        #Encoding
+        print("\n Page Infos ")
+        print("\n")
+        print(" Page encoding : " + pageEncoding)
+        print(" Compare header encoding with page encoding : " + compareEncoding)
+        #Robots / Security
+        print(" robots.txt : " + robotsTxtExist)
 
         # test perso to remove later
-        # TODO: faire analyse du header sur les scripts
 
-
+        # TODO: check if AMP is ok (if there are)
+        # TODO: If its home page, look at robots.txt
+        # TODO: Présence de liens HTTP alors qu'en face y'a du HTTPS
 
 
 

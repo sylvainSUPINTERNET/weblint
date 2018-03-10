@@ -31,7 +31,7 @@ else:
 
                 print(coreTest.renderTests())
 
-                print(coreTest.getUrlParsed()) #For test
+                #print(coreTest.getUrlParsed()) #For test
 
             else:
                 print("Error occured => " + str(req.status_code))
