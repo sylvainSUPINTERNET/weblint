@@ -148,7 +148,7 @@ class CoreTest:
 
             if (value != 'NoResult'):
                 urlParsed = urlparse(value)
-                if(urlParsed.scheme == "http" or urlParsed.scheme == "https"):
+                if (urlParsed.scheme == "http" or urlParsed.scheme == "https"):
                     req = urlopen(value)
                     response = req.read()
                     http_code = req.getcode()
@@ -169,34 +169,31 @@ class CoreTest:
         for code in list_http_codes:
             if (list_http_codes[code] != None and list_http_codes[code] >= 100 and list_http_codes[code] <= 103):
                 informations += 1
-                http_details.update({'informations': informations })
-            if(list_http_codes[code] != None and list_http_codes[code] >= 200 and list_http_codes[code] <= 226):
+                http_details.update({'informations': informations})
+            if (list_http_codes[code] != None and list_http_codes[code] >= 200 and list_http_codes[code] <= 226):
                 success += 1
                 http_details.update({'success': success})
-            if(list_http_codes[code] != None and list_http_codes[code] >= 300 and list_http_codes[code] <= 310):
+            if (list_http_codes[code] != None and list_http_codes[code] >= 300 and list_http_codes[code] <= 310):
                 redirection += 1
                 http_details.update({'redirection': redirection})
-            if(list_http_codes[code] != None and list_http_codes[code] >= 400 and list_http_codes[code] <= 499):
+            if (list_http_codes[code] != None and list_http_codes[code] >= 400 and list_http_codes[code] <= 499):
                 error_client += 1
                 http_details.update({'error_client': error_client})
             if (list_http_codes[code] != None and list_http_codes[code] >= 500 and list_http_codes[code] <= 527):
                 error_server += 1
                 http_details.update({'error_server': error_server})
 
-
         return http_details
-
 
     # CSS
     def getLinkTag(self):
         linkTagsCount = 0
         styleLinks = self.soup.find_all('link')
         for link in styleLinks:
-            if(link['rel'] != None):
-                if(link['rel'][0] == "stylesheet"):
+            if (link['rel'] != None):
+                if (link['rel'][0] == "stylesheet"):
                     linkTagsCount += 1
         return linkTagsCount
-
 
     def getLinkHref(self):
         hrefValue = []
@@ -204,19 +201,19 @@ class CoreTest:
         for link in styleLinks:
             if (link['rel'] != None):
                 if (link['rel'][0] == "stylesheet"):
-                    if(link['href'] != None):
+                    if (link['href'] != None):
                         linkParsed = urlparse(link['href'])
-                        if(linkParsed.scheme == "http" or linkParsed.scheme == "https" ):
+                        if (linkParsed.scheme == "http" or linkParsed.scheme == "https"):
                             hrefValue.append(link['href'])
 
-        if(hrefValue.__len__() == 0):
+        if (hrefValue.__len__() == 0):
             return " Aucun href http ou https detected"
         else:
             return hrefValue
 
     def getLinkLoadTime(self):
         hrefValue = self.getLinkHref()
-        if(type(hrefValue) != str): #if STR means 0 link found
+        if (type(hrefValue) != str):  # if STR means 0 link found
             loadTime = {}
             for value in hrefValue:
                 hrefParsed = urlparse(value)
@@ -232,9 +229,9 @@ class CoreTest:
             return " 0 links found for test loading"
 
     def getHrefHttpCode(self):
-        hrefValue = self.getLinkHref() # return 1 str if its one error
+        hrefValue = self.getLinkHref()  # return 1 str if its one error
 
-        if(type(hrefValue) != str):
+        if (type(hrefValue) != str):
             http_codes = {}
             for idx, value in enumerate(hrefValue):
                 req = urlopen(value)
@@ -248,7 +245,7 @@ class CoreTest:
 
     def getHrefHttpCodeDetail(self):
         list_http_codes = self.getHrefHttpCode()
-        if(type(list_http_codes) != str) :
+        if (type(list_http_codes) != str):
             informations = 0
             success = 0
             redirection = 0
@@ -278,10 +275,52 @@ class CoreTest:
         else:
             return " NO link found No HTTP code found for test"
 
+    # Check si on est sur une site HTTPS, qu'il y est aucun lien HTTP
+    # TODO: Check if url is HTTPS ou HTTP
+    # IF https => get all href, src script css js image
+    # push dans un array et faire une boucle, si on trouve un http on count ++ sur l'erreur
+    def httpsNoHttpSource(self):
+        allLink = []
+
+        error = []
+
+        if(self.url_parsed.scheme == "https"):
+
+            links = self.soup.find_all('a')
+            styles = self.soup.find_all('link')
+            scripts = self.soup.find_all('script')
+            images = self.soup.find_all('img')
+
+            for link in links:
+                if (link.has_attr('href')):
+                    allLink.append(link['href'])
+
+            for style in styles:
+                if (style.has_attr('href')):
+                    allLink.append(style['href'])
+
+            for image in images:
+                if (image.has_attr('src')):
+                    allLink.append(image['src'])
+
+            for script in scripts:
+                if (script.has_attr('src')):
+                    allLink.append(script['src'])
 
 
+            for value in allLink:
+                urlParsed = urlparse(value)
+                if(urlParsed.scheme == "http"):
+                    error.append(value)
+
+            if(error.__len__() > 0):
+                return error
+            else:
+                return " 0 http external link found "
 
 
+        else:
+            return " Source is not HTTPS, so not checking for extern link source"
 
     # PAGE
     # - informations
@@ -310,23 +349,23 @@ class CoreTest:
         x_timer = header['X-Timer']
         x_DNS_prefetch_control = header['X-DNS-Prefetch-Control']
 
-        if(CSP == None):
-            errorHeader.update({"No Content-Security-Policy": "No Content-Security-Policy" })
-        if(x_frame_options == None):
-            errorHeader.update({"X-Frame-Options" : "No X-Frame-Options"})
-        if(x_request_guid == None):
-            errorHeader.update({"X-Request-Guid" : "No X-Request-Guid"})
-        if(strict_transport_security  == None):
+        if (CSP == None):
+            errorHeader.update({"No Content-Security-Policy": "No Content-Security-Policy"})
+        if (x_frame_options == None):
+            errorHeader.update({"X-Frame-Options": "No X-Frame-Options"})
+        if (x_request_guid == None):
+            errorHeader.update({"X-Request-Guid": "No X-Request-Guid"})
+        if (strict_transport_security == None):
             errorHeader.update({"Strict-Transport-Security": "No Strict-Transport-Security"})
         if (vary == None):
             errorHeader.update({"Vary": "No Vary"})
-        if(x_server_by == None):
-            errorHeader.update({"X-Served-By" : "No X-Served-By"})
-        if(x_cache == None):
-            errorHeader.update({"X-Cache" : "No X-Cache"})
-        if (x_timer  == None):
+        if (x_server_by == None):
+            errorHeader.update({"X-Served-By": "No X-Served-By"})
+        if (x_cache == None):
+            errorHeader.update({"X-Cache": "No X-Cache"})
+        if (x_timer == None):
             errorHeader.update({"X-Timer": "No X-Timer"})
-        if (x_DNS_prefetch_control  == None):
+        if (x_DNS_prefetch_control == None):
             errorHeader.update({"X-DNS-Prefetch-Control": "No X-DNS-Prefetch-Control"})
 
         return errorHeader
@@ -334,14 +373,10 @@ class CoreTest:
     def headerDate(self):
         header = self.pageHeader()
         last_update = header['Last-Modified']
-        if(last_update != None):
+        if (last_update != None):
             return last_update
         else:
             return " Information not available via header"
-
-
-
-
 
     # Encoding
 
@@ -360,16 +395,17 @@ class CoreTest:
         else:
             return ' Error cannot find encoding of page'
 
-    def compareEncoding(self): #compare encoding header / page
+    def compareEncoding(self):  # compare encoding header / page
         pageEncoding = self.getPageEncoding()
-        if(pageEncoding != 'Error cannot find encoding of page' ):
-            #check if we find charset in header
+        if (pageEncoding != 'Error cannot find encoding of page'):
+            # check if we find charset in header
             _, params = cgi.parse_header('text/html; charset=utf-8')
-            if(params['charset']):
-                if(params['charset'] == pageEncoding):
+            if (params['charset']):
+                if (params['charset'] == pageEncoding):
                     return " Encoding same on page and header"
                 else:
-                    return " Encoding not same between page and header => Page : " + pageEncoding + " / Header : " + params['charset']
+                    return " Encoding not same between page and header => Page : " + pageEncoding + " / Header : " + \
+                           params['charset']
             else:
                 return " Cannot find encoding into header details"
         else:
@@ -380,52 +416,42 @@ class CoreTest:
         url = self.homePath
         urlRobotsTxt = url + "robots.txt"
         req = requests.get(urlRobotsTxt)
-        if(req.status_code == 200):
+        if (req.status_code == 200):
             return urlRobotsTxt
         else:
             return " No robots.txt found"
-
-
-
-
-
-
-
-
 
     # Results tests
     def renderTests(self):
         t0 = time.time()
 
-        #HEADER checking
+        # HEADER checking
         header = self.pageHeader()
         headerErrors = self.headerDetails()
         headerDate = self.headerDate()
 
-
-        #DOM checking
+        # DOM checking
         # - script JS
         tagScript = self.getScriptTags()
-        scriptLoadingTime = str(self.getScriptLoadTime()) #only http or https parsed
+        scriptLoadingTime = str(self.getScriptLoadTime())  # only http or https parsed
         scriptHttpCode = str(self.getScriptHttpCode())
         errorResultHttpCode = str(self.countErrorHttpCode())
 
         # - CSS
         countStyleTag = str(self.getLinkTag())
-        linkHref = self.getLinkHref() #only http or https parsed
+        linkHref = self.getLinkHref()  # only http or https parsed
         linkLoadingTime = str(self.getLinkLoadTime())
         linkHrefHttpCode = str(self.getHrefHttpCode())
         linkHrefHttpCodeDetail = str(self.getHrefHttpCodeDetail())
 
         # - Page
         pageEncoding = str(self.getPageEncoding())
-        compareEncoding = str(self.compareEncoding()) #compare header encoding with page encoding
+        compareEncoding = str(self.compareEncoding())  # compare header encoding with page encoding
         robotsTxtExist = str(self.robotsTxtExist())
-
+        httpExternLinkOnHttps = str(self.httpsNoHttpSource())
 
         print(" _____________________________ RESULTS TESTS _____________________________ ")
         print("\n")
-
 
         print("- - - - - - GENERAL - - - - - -")
         print("\n")
@@ -440,9 +466,8 @@ class CoreTest:
         print(" Path home : " + str(self.homePath))
         print("\n")
 
-
         print("- - - - - - HEADER - - - - - -")
-        #print(header)
+        # print(header)
         print("\n")
         print("Last update : " + headerDate)
         for detail in headerErrors:
@@ -454,16 +479,17 @@ class CoreTest:
         print("\n JS")
         print("\n")
         print(" Scripts tag : " + tagScript)
-        #pprint(" Scripts src : " + str(self.getScriptSrc()))
+        # pprint(" Scripts src : " + str(self.getScriptSrc()))
         print("\n")
-        pprint(" GET loading time : " + scriptLoadingTime )
+        pprint(" GET loading time : " + scriptLoadingTime)
         print("\n")
         pprint(" Script HTTP code response (from scripts loading) : " + scriptHttpCode)
         print("\n")
-        print(" Script HTTP code response ERROR (from script loading HTTPS ) / ONLY http or https parsed : " + errorResultHttpCode)
+        print(
+            " Script HTTP code response ERROR (from script loading HTTPS ) / ONLY http or https parsed : " + errorResultHttpCode)
         print("\n")
 
-        #CSS link
+        # CSS link
         print("\n CSS")
         print("\n")
         print(" Link stylesheet tag : " + countStyleTag)
@@ -473,20 +499,19 @@ class CoreTest:
         print(" HTTP code detail : " + linkHrefHttpCodeDetail)
         print("\n")
 
-        #Encoding
+        # Encoding
         print("\n Page Infos ")
         print("\n")
         print(" Page encoding : " + pageEncoding)
         print(" Compare header encoding with page encoding : " + compareEncoding)
-        #Robots / Security
+        # Robots / Security
         print(" robots.txt : " + robotsTxtExist)
-
+        pprint(" HTTP external link on your HTTPS : " + httpExternLinkOnHttps)
 
         # test perso to remove later
 
         # TODO: check if AMP is ok (if there are)
         # TODO: Présence de liens HTTP alors qu'en face y'a du HTTPS
-
 
 
 
