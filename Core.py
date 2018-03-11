@@ -5,7 +5,7 @@ import urllib
 import requests
 import re
 import os
-
+import urllib.robotparser
 
 from pprint import pprint
 from pprint import pformat
@@ -375,22 +375,16 @@ class CoreTest:
         else:
             return " Cannot find page encoding"
 
-        #Robots / Security
-
+    # Robots / Security
     def robotsTxtExist(self):
         url = self.homePath
         urlRobotsTxt = url + "robots.txt"
         req = requests.get(urlRobotsTxt)
         if(req.status_code == 200):
-            return " Robots.txt found"
+            return urlRobotsTxt
         else:
             return " No robots.txt found"
 
-
-        # TODO Analyser le robots.txt
-        #exemple ces deux liens le robots na pas les même agents etc donc a regarder
-        # https://stackoverflow.com/robots.txt (Cest bien, plein d'agent un sitemap etc)
-        # http://www.univ-paris3.fr/robots.txt (pas de sitemap, qun seul agent etc)
 
 
 
@@ -487,15 +481,16 @@ class CoreTest:
         #Robots / Security
         print(" robots.txt : " + robotsTxtExist)
 
+
         # test perso to remove later
 
         # TODO: check if AMP is ok (if there are)
-        # TODO: If its home page, look at robots.txt
         # TODO: Présence de liens HTTP alors qu'en face y'a du HTTPS
+
 
 
 
         print("\n")
         print("\n")
         t1 = time.time()
-        return "Execution time for each tests : " + str(t1 - t0)
+        return "Execution time for the test : " + str(t1 - t0)
