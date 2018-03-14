@@ -15,6 +15,13 @@ from urllib.request import urlopen
 from bs4 import BeautifulSoup
 from bs4 import UnicodeDammit
 
+
+# XML parser
+import xml.etree.ElementTree as ET
+
+
+
+
 from django.core.validators import URLValidator
 
 
@@ -275,10 +282,7 @@ class CoreTest:
         else:
             return " NO link found No HTTP code found for test"
 
-    # Check si on est sur une site HTTPS, qu'il y est aucun lien HTTP
-    # TODO: Check if url is HTTPS ou HTTP
-    # IF https => get all href, src script css js image
-    # push dans un array et faire une boucle, si on trouve un http on count ++ sur l'erreur
+
     def httpsNoHttpSource(self):
         allLink = []
 
@@ -330,7 +334,6 @@ class CoreTest:
     # - header
     def pageHeader(self):
         req = urlopen(self.url_page)
-        response = req.read()
         header = req.headers
         return header
 
@@ -411,7 +414,7 @@ class CoreTest:
         else:
             return " Cannot find page encoding"
 
-    # Robots / Security
+    # Robots / Security / SiteMap
     def robotsTxtExist(self):
         url = self.homePath
         urlRobotsTxt = url + "robots.txt"
@@ -420,6 +423,80 @@ class CoreTest:
             return urlRobotsTxt
         else:
             return " No robots.txt found"
+
+    def sitemapAccess(self):
+        trimHomePathURL = self.homePath[:-1] #remove last " / " at the end of URL*
+
+        req = requests.get(trimHomePathURL + "/sitemap.xml")
+        if(req.status_code == 200):
+            return "accessible at " + trimHomePathURL + "/sitemap.xml"
+        else:
+            return "not accessible at " + trimHomePathURL + "/sitemap.xml ( error : " + str(req.status_code)+" )"
+
+    def getUrlFromSiteMap(self):
+        trimHomePathURL = self.homePath[:-1]  # remove last " / " at the end of URL*
+
+        req = requests.get(trimHomePathURL + "/sitemap.xml")
+
+        if (req.status_code == 200):
+            xml = req.text
+            soup = BeautifulSoup(xml, "html.parser")
+
+            if(soup.find_all('loc').__len__() == 0):
+                return " [X] Cannot parse the sitemap.xml, pages url must be wrapped into <loc></loc> balises if you want the test parsed them"
+            else:
+                pages_urls = []
+                urlsWrapper = soup.find_all('loc')
+                for url in urlsWrapper:
+                    pages_urls.append(url.text)
+
+                if(pages_urls.__len__() > 0):
+                    URLCodeHttp = {}
+
+                    for url in pages_urls:
+                        testURL = requests.get(url)
+                        URLCodeHttp.update({url: testURL.status_code})
+                    return URLCodeHttp
+
+
+                else:
+                    return " URLS parsed, but an error occured !"
+        else:
+            return " cannot access to the ressource " + str(req.status_code)
+
+    def countHttpErrorFromSiteMap(self):
+        URLCodeHttp = self.getUrlFromSiteMap()
+
+        clientErrorCount = 0
+        serverErrorCount = 0
+        informationResponseCount = 0
+        redirectionCount = 0
+        successCount = 0
+
+        result = {}
+
+        if(type(URLCodeHttp) != str):
+            for code in URLCodeHttp:
+                if (URLCodeHttp[code] >= 100 and URLCodeHttp[code] <= 199):
+                    informationResponseCount += 1
+                if (URLCodeHttp[code] >= 200 and URLCodeHttp[code] <= 299):
+                    successCount += 1
+                if (URLCodeHttp[code] >= 300 and URLCodeHttp[code] <= 399):
+                    redirectionCount += 1
+                if(URLCodeHttp[code] >= 400 and URLCodeHttp[code] <= 499 ):
+                    clientErrorCount += 1
+                if(URLCodeHttp[code] >= 500 and URLCodeHttp[code] <= 599):
+                    serverErrorCount += 1
+
+            return {"success": successCount, "informationsResponse": informationResponseCount, "redirection": redirectionCount, "clientError": clientErrorCount, "serverError": serverErrorCount}
+
+        else:
+            return " WARNING : No count for URL HTTP CODE error, because 0 urls gave and parsed by the the test (check at your sitemap.xml, and wrap each links into <loc></loc> xml balise "
+
+
+
+
+
 
     # Results tests
     def renderTests(self):
@@ -449,6 +526,9 @@ class CoreTest:
         compareEncoding = str(self.compareEncoding())  # compare header encoding with page encoding
         robotsTxtExist = str(self.robotsTxtExist())
         httpExternLinkOnHttps = str(self.httpsNoHttpSource())
+        sitemapIsAccessible = str(self.sitemapAccess())
+        sitemapURLTest = str(self.getUrlFromSiteMap())
+        sitemapHTTPCodeResume = str(self.countHttpErrorFromSiteMap())
 
         print(" _____________________________ RESULTS TESTS _____________________________ ")
         print("\n")
@@ -464,6 +544,7 @@ class CoreTest:
         print(" Fragment : " + self.fragment)
         print(" Loading time : " + str(self.pageLoadingTime()))
         print(" Path home : " + str(self.homePath))
+        print(" Sitemap.xml access : " + sitemapIsAccessible)
         print("\n")
 
         print("- - - - - - HEADER - - - - - -")
@@ -493,9 +574,13 @@ class CoreTest:
         print("\n CSS")
         print("\n")
         print(" Link stylesheet tag : " + countStyleTag)
+        print("\n")
         print(linkHref)
+        print("\n")
         pprint(" Loading time : " + linkLoadingTime)
+        print("\n")
         pprint(" HTTP code : " + linkHrefHttpCode)
+        print("\n")
         print(" HTTP code detail : " + linkHrefHttpCodeDetail)
         print("\n")
 
@@ -503,15 +588,25 @@ class CoreTest:
         print("\n Page Infos ")
         print("\n")
         print(" Page encoding : " + pageEncoding)
+        print("\n")
         print(" Compare header encoding with page encoding : " + compareEncoding)
-        # Robots / Security
+        print("\n")
+        # Robots / Security / Sitemap
         print(" robots.txt : " + robotsTxtExist)
+        print("\n")
         pprint(" HTTP external link on your HTTPS : " + httpExternLinkOnHttps)
+        print("\n")
+        pprint(" URL parsed and tests from sitemap.xml : " + sitemapURLTest)
+        print("\n")
+        pprint(sitemapHTTPCodeResume)
 
-        # test perso to remove later
 
-        # TODO: check if AMP is ok (if there are)
-        # TODO: Présence de liens HTTP alors qu'en face y'a du HTTPS
+        # TODO: Robot parser
+        # TODO: Flux RSS / Atom
+
+
+
+
 
 
 
