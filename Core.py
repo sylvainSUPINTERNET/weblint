@@ -7,6 +7,9 @@ import re
 import os
 import urllib.robotparser
 
+from http.client import responses
+
+
 from pprint import pprint
 from pprint import pformat
 
@@ -590,7 +593,8 @@ class CoreTest:
                 testResultsRSS.update(
                     {"rss URL": url,
                      "time":  str(resTime),
-                     "HTTP/HTTPS code": resCode }
+                     "HTTP message": responses[req.status_code]
+                     }
                 )
                 return testResultsRSS
 
@@ -610,12 +614,11 @@ class CoreTest:
                 resTime = t1 - t0
                 resCode = req.status_code
 
-                print(req.headers)
-
                 testResultsAtom.update(
                     {"atom URL": url,
                      "time":  str(resTime),
-                     "HTTP/HTTPS code": resCode }
+                     "HTTP/HTTPS code": resCode,
+                     "HTTP message": responses[req.status_code]}
                 )
                 return testResultsAtom
 
@@ -623,8 +626,8 @@ class CoreTest:
             return " WARNING: No Atom url for loading test"
 
 
-    # TODO: Count error HTTP pour Atom / RSS
     # TODO: Checker le header Atom / RSS (si le rss est un xml, dans le header le content-type doit etre du 'text/xml' par exempel
+    # TODO: clean code (render / remove test / comment some part of code)
 
 
 
