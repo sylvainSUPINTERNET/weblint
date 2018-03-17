@@ -496,6 +496,143 @@ class CoreTest:
 
 
 
+    # FLUX RSS / ATOM
+
+    # RSS
+    def getRSS(self):
+        linkTags = self.soup.find_all('link')
+
+        linkRSS = []
+        rssType = "application/rss+xml"
+
+        for link in linkTags:
+            if(link.has_attr('type')):
+                if(link['type'] == rssType):
+                    linkRSS.append(link["href"])
+
+        if(linkRSS.__len__() == 0):
+            return " WARNING : No RSS on this URL"
+        else:
+            return linkRSS
+
+    # Atom
+    def getAtom(self):
+        linkTags = self.soup.find_all('link')
+
+        linkAtom = []
+        atomType = "application/atom+xml"
+
+        for link in linkTags:
+            if(link.has_attr('type')):
+                if(link['type'] == atomType):
+                    linkAtom.append(link["href"])
+
+        if(linkAtom.__len__() == 0):
+            return " WARNING : No Atom on this URL"
+        else:
+            return linkAtom
+
+
+    # Get only RSS/ATOM valid URL (http/https)
+    def getValidUrlRSS(self):
+        rssLinks = self.getRSS()
+
+        validLinkRSS = []
+
+        if(rssLinks != " WARNING : No RSS on this URL"):
+            for link in rssLinks:
+                urlParsed = urlparse(link)
+                if(urlParsed.scheme == "http" or urlParsed.scheme == "https" ):
+
+                    validLinkRSS.append(link)
+                    if(validLinkRSS.__len__() == 0):
+                        return " RSS link cannot be testing (only http / http can be)"
+                    else:
+                        return validLinkRSS
+        else:
+            return " WARNING: No RSS links for the validitor test"
+
+
+    def getValidUrlAtom(self):
+        atomLinks = self.getAtom()
+
+        validLinkAtom = []
+
+        if(atomLinks != " WARNING : No Atom on this URL"):
+            for link in atomLinks:
+                urlParsed = urlparse(link)
+                if(urlParsed.scheme == "http" or urlParsed.scheme == "https" ):
+
+                    validLinkAtom.append(link)
+                    if(validLinkAtom.__len__() == 0):
+                        return " Atom link cannot be testing (only http / http can be)"
+                    else:
+                        return validLinkAtom
+        else:
+            return " WARNING: No Atom links for the validitor test"
+
+
+    # RSS / Atom -> loding time / HTTP / HTTPS error / header infos
+
+    def getLoadingTimeRSS(self): # Return time / HTTP | HTTPS code / URL target for RSS
+        urlsRss = self.getValidUrlRSS()
+
+        testResultsRSS = {}
+
+        if(type(urlsRss) != str ):
+            for url in urlsRss:
+                t0 = time.time()
+                req = requests.get(url)
+                t1 = time.time()
+                resTime = t1 - t0
+                resCode = req.status_code
+
+                testResultsRSS.update(
+                    {"rss URL": url,
+                     "time":  str(resTime),
+                     "HTTP/HTTPS code": resCode }
+                )
+                return testResultsRSS
+
+        else:
+            return " WARNING: No RSS url for loading test"
+
+    def getLoadingTimeAtom(self): # Return time / HTTP | HTTPS code / URL target for Atom
+        urlsAtom = self.getValidUrlAtom()
+
+        testResultsAtom = {}
+
+        if(type(urlsAtom) != str ):
+            for url in urlsAtom:
+                t0 = time.time()
+                req = requests.get(url)
+                t1 = time.time()
+                resTime = t1 - t0
+                resCode = req.status_code
+
+                print(req.headers)
+
+                testResultsAtom.update(
+                    {"atom URL": url,
+                     "time":  str(resTime),
+                     "HTTP/HTTPS code": resCode }
+                )
+                return testResultsAtom
+
+        else:
+            return " WARNING: No Atom url for loading test"
+
+
+    # TODO: Count error HTTP pour Atom / RSS
+    # TODO: Checker le header Atom / RSS (si le rss est un xml, dans le header le content-type doit etre du 'text/xml' par exempel
+
+
+
+
+
+
+
+
 
 
     # Results tests
@@ -603,6 +740,19 @@ class CoreTest:
 
         # TODO: Robot parser
         # TODO: Flux RSS / Atom
+
+        print("\n")
+        print("\n")
+        print(" RSS")
+        print("\n")
+        pprint(self.getRSS())
+        pprint(self.getValidUrlRSS())
+        pprint(self.getLoadingTimeRSS())
+
+        print("\n")
+        pprint(self.getAtom())
+        pprint(self.getValidUrlAtom())
+        pprint(self.getLoadingTimeAtom())
 
 
 
