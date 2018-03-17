@@ -632,6 +632,83 @@ class CoreTest:
 
 
 
+    #text/xml OR application/xml -> for /rss.xml
+
+    def checkHeaderRSS(self):
+        urlsRSS = self.getValidUrlRSS()
+
+        checkHeaderRSSResults = {}
+
+        if(type(urlsRSS) != str):
+            for url in urlsRSS:
+                req = requests.get(url)
+
+                extension = urlparse(url)
+                isXml = extension.path[-3:]
+
+                if(extension != None or isXml != None):
+                    if(isXml == "xml"):
+                        header_content_type = req.headers['Content-Type']
+                        if(header_content_type == "text/xml" or header_content_type == "application/xml"):
+                            checkHeaderRSSResults.update(
+                                {"RSS URL": url,
+                                 "Header[Content-Type]": header_content_type,
+                                 "RSS type": isXml,
+                                 "Error": "No"
+                                 }
+                            )
+                            return checkHeaderRSSResults
+                        else:
+                            checkHeaderRSSResults.update(
+                                {"RSS URL": url,
+                                 "Header[Content-Type]": header_content_type,
+                                 "Atom type": isXml,
+                                 "Error": "Yes, content-type not good"
+                                 }
+                            )
+                            return checkHeaderRSSResults
+        else:
+            return " WARNING: No RSS urls given for the header test "
+
+
+    def checkHeaderAtom(self):
+        urlsAtom = self.getValidUrlAtom()
+
+        checkHeaderAtomResults = {}
+
+        if(type(urlsAtom) != str):
+            for url in urlsAtom:
+                req = requests.get(url)
+
+                extension = urlparse(url)
+                isXml = extension.path[-3:]
+
+                if(extension != None or isXml != None):
+                    if(isXml == "xml"):
+                        header_content_type = req.headers['Content-Type']
+                        if(header_content_type == "text/xml" or header_content_type == "application/xml"):
+                            checkHeaderAtomResults.update(
+                                {"Atom URL": url,
+                                 "Header[Content-Type]": header_content_type,
+                                 "Atom type": isXml,
+                                 "Error": "No"
+                                 }
+                            )
+                            return checkHeaderAtomResults
+                        else:
+                            checkHeaderAtomResults.update(
+                                {"Atom URL": url,
+                                 "Header[Content-Type]": header_content_type,
+                                 "Atom type": isXml,
+                                 "Error": "Yes, content-type not good"
+                                 }
+                            )
+                            return checkHeaderAtomResults
+        else:
+            return " WARNING: No Atom urls given for the header test "
+
+
+
 
 
 
@@ -669,6 +746,17 @@ class CoreTest:
         sitemapIsAccessible = str(self.sitemapAccess())
         sitemapURLTest = str(self.getUrlFromSiteMap())
         sitemapHTTPCodeResume = str(self.countHttpErrorFromSiteMap())
+
+        # - RSS / ATOM
+        RSS = str(self.getRSS())
+        validRSS = str(self.getValidUrlRSS())
+        loadingTimeRSS = str(self.getLoadingTimeRSS())
+        headerRSS = str(self.checkHeaderRSS())
+
+        atom = str(self.getAtom())
+        validAtom = str(self.getValidUrlAtom())
+        loadingTimeAtom = str(self.getLoadingTimeAtom())
+        headerAtom = str(self.checkHeaderAtom())
 
         print(" _____________________________ RESULTS TESTS _____________________________ ")
         print("\n")
@@ -739,23 +827,31 @@ class CoreTest:
         pprint(" URL parsed and tests from sitemap.xml : " + sitemapURLTest)
         print("\n")
         pprint(sitemapHTTPCodeResume)
-
-
-        # TODO: Robot parser
-        # TODO: Flux RSS / Atom
-
         print("\n")
+
+        # RSS / ATOM
+        print("- - - - - - RSS - - - - - -")
         print("\n")
         print(" RSS")
         print("\n")
-        pprint(self.getRSS())
-        pprint(self.getValidUrlRSS())
-        pprint(self.getLoadingTimeRSS())
-
+        pprint(" RSS tags : " + RSS)
         print("\n")
-        pprint(self.getAtom())
-        pprint(self.getValidUrlAtom())
-        pprint(self.getLoadingTimeAtom())
+        pprint(" RSS HTTP / HTTPS (testable) : " + validRSS)
+        print("\n")
+        pprint(" RSS Loading time (http / https only tested) : " + loadingTimeRSS)
+        print("\n")
+        pprint(" RSS Header checking content-type (http / https only tested) : " + headerRSS)
+        print("\n")
+
+        print("- - - - - - ATOM - - - - - -")
+        print("\n")
+        pprint(" Atom tags : " + atom)
+        print("\n")
+        pprint(" Atom HTTP / HTTPS (testable) : " + validAtom)
+        print("\n")
+        pprint(" Atom Loading time (http / https only tested) : " + loadingTimeAtom)
+        print("\n")
+        pprint(" Atom Header checking content-type (http / https only tested) : " + headerAtom)
 
 
 

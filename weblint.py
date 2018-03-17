@@ -9,7 +9,7 @@ from Core import CoreTest
 isValid = False
 
 if(sys.argv.__len__() < 2):
-    print("Please enter an url to start the test")
+    print(" Please enter an url to start the test")
 else:
     url = str(sys.argv[1])
     val = URLValidator()
@@ -34,7 +34,7 @@ else:
                 #print(coreTest.getUrlParsed()) #For test
 
             else:
-                print("Error occured => " + str(req.status_code))
+                print(" Error occured => " + str(req.status_code))
         else:
             print(" URL given not valid !")
     except:
