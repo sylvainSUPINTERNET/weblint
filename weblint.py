@@ -25,7 +25,7 @@ else:
                 print("\n")
                 print(coreTest.renderTests())
             else:
-                print(" Error occured : " + req.status_code)
+                print(" Error occured : " + str(req.status_code) )
 
 
 
