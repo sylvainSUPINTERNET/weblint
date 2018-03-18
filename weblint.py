@@ -1,46 +1,31 @@
-
 import sys
 import requests
-import urllib
+import validators
 
-from django.core.validators import URLValidator
+
 from Core import CoreTest
 
-isValid = False
-
 if(sys.argv.__len__() < 2):
-    print(" Please enter an url to start the test")
+    print(" Please enter a valid url to start the test, ex : http://fr.wowhead.com/death-knight-transmogrification-armor-sets-guide ")
 else:
     url = str(sys.argv[1])
-    val = URLValidator()
-    try:
-        val(url)
-        isValid = True
-        if (isValid):
-            print(" URL is valid")
+    if(validators.url(url) != True):
+        print(" [X] Cannot test this url : Malformed")
+    else:
+        print(" URL is valid \n")
+        try:
             req = requests.get(url)
+        except requests.ConnectionError:
+            print(" Can't connect to the site (dosnt exist !) \n")
+        else:
             if (req.status_code == 200):
                 coreTest = CoreTest(str(sys.argv[1]))
-
-                print(coreTest.getUrlPage())
-
-                # display code source HTML
-                #print(coreTest.getPageSourceCode())
-                # display code source HTML prettify
-                #print(coreTest.getSoupPretty())
-
+                print(" URL requested : " + coreTest.getUrlPage())
+                print(" Please wait while the test runs . . .")
+                print("\n")
                 print(coreTest.renderTests())
-
-                #print(coreTest.getUrlParsed()) #For test
-
             else:
-                print(" Error occured => " + str(req.status_code))
-        else:
-            print(" URL given not valid !")
-    except:
-        isValid = False
-
-
+                print(" Error occured : " + req.status_code)
 
 
 

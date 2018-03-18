@@ -1,37 +1,23 @@
 import cgi
-import ssl
 import time
-import urllib
 import requests
 import re
-import os
-import urllib.robotparser
-
-from http.client import responses
 
 
 from pprint import pprint
-from pprint import pformat
+
 
 from urllib.parse import urlparse
 from urllib.request import urlopen
 from bs4 import BeautifulSoup
-from bs4 import UnicodeDammit
 
 
-# XML parser
-import xml.etree.ElementTree as ET
-
-
-
-
-from django.core.validators import URLValidator
+from http.client import responses
 
 
 class CoreTest:
     url_page = ""
     domain = ""
-
     page_source_code = ""
     soup = ""
 
@@ -110,7 +96,9 @@ class CoreTest:
         soup = BeautifulSoup(self.sourceCode(), 'html.parser')
         return soup
 
-    # DOM
+
+
+    # DOM tests
 
     # JS
     def getScriptTags(self):
@@ -217,7 +205,7 @@ class CoreTest:
                             hrefValue.append(link['href'])
 
         if (hrefValue.__len__() == 0):
-            return " Aucun href http ou https detected"
+            return " No links with http ou https href detected"
         else:
             return hrefValue
 
@@ -283,7 +271,7 @@ class CoreTest:
 
             return http_details
         else:
-            return " NO link found No HTTP code found for test"
+            return " No link found No HTTP code found for test"
 
 
     def httpsNoHttpSource(self):
@@ -327,7 +315,7 @@ class CoreTest:
 
 
         else:
-            return " Source is not HTTPS, so not checking for extern link source"
+            return " URL is not HTTPS, so not checking for extern link source"
 
     # PAGE
     # - informations
@@ -384,8 +372,7 @@ class CoreTest:
         else:
             return " Information not available via header"
 
-    # Encoding
-
+    # encoding
     def getPageEncoding(self):
         encod = self.soup.meta.get('charset')
         if encod == None:
@@ -494,12 +481,12 @@ class CoreTest:
             return {"success": successCount, "informationsResponse": informationResponseCount, "redirection": redirectionCount, "clientError": clientErrorCount, "serverError": serverErrorCount}
 
         else:
-            return " WARNING : No count for URL HTTP CODE error, because 0 urls gave and parsed by the the test (check at your sitemap.xml, and wrap each links into <loc></loc> xml balise "
+            return " No count for URL HTTP CODE error, because 0 urls gave and parsed by the the test (check at your sitemap.xml, and wrap each links into <loc></loc> xml balise "
 
 
 
 
-    # FLUX RSS / ATOM
+    # RSS / ATOM
 
     # RSS
     def getRSS(self):
@@ -514,7 +501,7 @@ class CoreTest:
                     linkRSS.append(link["href"])
 
         if(linkRSS.__len__() == 0):
-            return " WARNING : No RSS on this URL"
+            return " No RSS on this URL"
         else:
             return linkRSS
 
@@ -531,7 +518,7 @@ class CoreTest:
                     linkAtom.append(link["href"])
 
         if(linkAtom.__len__() == 0):
-            return " WARNING : No Atom on this URL"
+            return " No Atom on this URL"
         else:
             return linkAtom
 
@@ -542,7 +529,7 @@ class CoreTest:
 
         validLinkRSS = []
 
-        if(rssLinks != " WARNING : No RSS on this URL"):
+        if(rssLinks != " No RSS on this URL"):
             for link in rssLinks:
                 urlParsed = urlparse(link)
                 if(urlParsed.scheme == "http" or urlParsed.scheme == "https" ):
@@ -553,7 +540,7 @@ class CoreTest:
                     else:
                         return validLinkRSS
         else:
-            return " WARNING: No RSS links for the validitor test"
+            return " No RSS links for the validitor test"
 
 
     def getValidUrlAtom(self):
@@ -561,7 +548,7 @@ class CoreTest:
 
         validLinkAtom = []
 
-        if(atomLinks != " WARNING : No Atom on this URL"):
+        if(atomLinks != " No Atom on this URL"):
             for link in atomLinks:
                 urlParsed = urlparse(link)
                 if(urlParsed.scheme == "http" or urlParsed.scheme == "https" ):
@@ -572,7 +559,7 @@ class CoreTest:
                     else:
                         return validLinkAtom
         else:
-            return " WARNING: No Atom links for the validitor test"
+            return " No Atom links for the validitor test"
 
 
     # RSS / Atom -> loding time / HTTP / HTTPS error / header infos
@@ -588,18 +575,32 @@ class CoreTest:
                 req = requests.get(url)
                 t1 = time.time()
                 resTime = t1 - t0
+
+                timeReport = ""
+                if (resTime > 5):
+                    timeReport = " Long "
+                if (resTime > 10):
+                    timeReport = " Très long"
+                if (resTime < 5):
+                    timeReport = " Moyen"
+                if (resTime < 2):
+                    timeReport = " Rapide"
+                if (resTime < 1):
+                    timeReport = " Très Rapide"
+
                 resCode = req.status_code
 
                 testResultsRSS.update(
                     {"rss URL": url,
                      "time":  str(resTime),
+                     "Loading time": timeReport,
                      "HTTP message": responses[req.status_code]
                      }
                 )
                 return testResultsRSS
 
         else:
-            return " WARNING: No RSS url for loading test"
+            return " No RSS url for loading test"
 
     def getLoadingTimeAtom(self): # Return time / HTTP | HTTPS code / URL target for Atom
         urlsAtom = self.getValidUrlAtom()
@@ -611,24 +612,33 @@ class CoreTest:
                 t0 = time.time()
                 req = requests.get(url)
                 t1 = time.time()
+
                 resTime = t1 - t0
+                timeReport = ""
+                if (resTime > 5):
+                    timeReport = " Long "
+                if (resTime > 10):
+                    timeReport = " Très long"
+                if (resTime < 5):
+                    timeReport = " Moyen"
+                if (resTime < 2):
+                    timeReport = " Rapide"
+                if (resTime < 1):
+                    timeReport = " Très Rapide"
+
                 resCode = req.status_code
 
                 testResultsAtom.update(
                     {"atom URL": url,
                      "time":  str(resTime),
+                     "Loading time" : timeReport,
                      "HTTP/HTTPS code": resCode,
                      "HTTP message": responses[req.status_code]}
                 )
                 return testResultsAtom
 
         else:
-            return " WARNING: No Atom url for loading test"
-
-
-    # TODO: Checker le header Atom / RSS (si le rss est un xml, dans le header le content-type doit etre du 'text/xml' par exempel
-    # TODO: clean code (render / remove test / comment some part of code)
-
+            return " No Atom url for loading test"
 
 
 
@@ -668,7 +678,7 @@ class CoreTest:
                             )
                             return checkHeaderRSSResults
         else:
-            return " WARNING: No RSS urls given for the header test "
+            return " No RSS urls given for the header test "
 
 
     def checkHeaderAtom(self):
@@ -705,7 +715,7 @@ class CoreTest:
                             )
                             return checkHeaderAtomResults
         else:
-            return " WARNING: No Atom urls given for the header test "
+            return " No Atom urls given for the header test "
 
 
 
@@ -717,12 +727,7 @@ class CoreTest:
 
     # Results tests
     def renderTests(self):
-        t0 = time.time()
-
-        # HEADER checking
-        header = self.pageHeader()
-        headerErrors = self.headerDetails()
-        headerDate = self.headerDate()
+        t0 = time.time() # global timer for all the tests
 
         # DOM checking
         # - script JS
@@ -738,7 +743,10 @@ class CoreTest:
         linkHrefHttpCode = str(self.getHrefHttpCode())
         linkHrefHttpCodeDetail = str(self.getHrefHttpCodeDetail())
 
-        # - Page
+        # - Page infos
+        header = self.pageHeader()
+        headerErrors = self.headerDetails()
+        headerDate = self.headerDate()
         pageEncoding = str(self.getPageEncoding())
         compareEncoding = str(self.compareEncoding())  # compare header encoding with page encoding
         robotsTxtExist = str(self.robotsTxtExist())
@@ -776,7 +784,6 @@ class CoreTest:
         print("\n")
 
         print("- - - - - - HEADER - - - - - -")
-        # print(header)
         print("\n")
         print("Last update : " + headerDate)
         for detail in headerErrors:
@@ -788,7 +795,6 @@ class CoreTest:
         print("\n JS")
         print("\n")
         print(" Scripts tag : " + tagScript)
-        # pprint(" Scripts src : " + str(self.getScriptSrc()))
         print("\n")
         pprint(" GET loading time : " + scriptLoadingTime)
         print("\n")
@@ -830,7 +836,8 @@ class CoreTest:
         print("\n")
 
         # RSS / ATOM
-        print("- - - - - - RSS - - - - - -")
+        print("- - - - - - RSS & ATOM - - - - - -")
+
         print("\n")
         print(" RSS")
         print("\n")
@@ -843,7 +850,9 @@ class CoreTest:
         pprint(" RSS Header checking content-type (http / https only tested) : " + headerRSS)
         print("\n")
 
-        print("- - - - - - ATOM - - - - - -")
+
+        print("\n")
+        print(" Atom")
         print("\n")
         pprint(" Atom tags : " + atom)
         print("\n")
@@ -854,12 +863,7 @@ class CoreTest:
         pprint(" Atom Header checking content-type (http / https only tested) : " + headerAtom)
 
 
-
-
-
-
-
         print("\n")
         print("\n")
         t1 = time.time()
-        return "Execution time for the test : " + str(t1 - t0)
+        return " Execution time for all the test : " + str(t1 - t0) + "\n" + "______________________________________________________________________" + "\n"

@@ -6,4 +6,6 @@ Python3+ weblint
 
 - requests
 
-- bs4 
+- bs4
+
+- validators
