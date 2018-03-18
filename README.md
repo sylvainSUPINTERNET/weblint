@@ -2,10 +2,17 @@
 Python3+ weblint 
 
 
-** Package required **
+** Dependencies required **
 
 - requests
 
 - bs4
 
 - validators
+
+
+```python
+$ python3 \weblint.py string_url
+
+$ py .\weblint.py string_url
+```
